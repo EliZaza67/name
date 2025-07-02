@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mini Drift Boss Clone</title>
+  <style>
+    body { margin: 0; background: #222; }
+    canvas { display: block; margin: 40px auto; background: #222; }
+    #score { color: #fff; text-align: center; font-family: sans-serif; font-size: 2em; }
+    #restart { display: none; margin: 0 auto; padding: 12px 32px; font-size: 1.2em; }
+  </style>
+</head>
+<body>
+  <div id="score">Score: 0</div>
+  <canvas id="game" width="400" height="600"></canvas>
+  <button id="restart">Restart</button>
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreDiv = document.getElementById('score');
+    let restartBtn = document.getElementById('restart');
+
+    // Game variables
+    let car = { x: 180, y: 480, w: 40, h: 60, angle: 0, turning: false };
+    let path = [{ x: 150, w: 100 }]; // path segments
+    let speed = 2.5;
+    let score = 0;
+    let gameOver = false;
+    let frame = 0;
+
+    function resetGame() {
+      car = { x: 180, y: 480, w: 40, h: 60, angle: 0, turning: false };
+      path = [{ x: 150, w: 100 }];
+      speed = 2.5;
+      score = 0;
+      gameOver = false;
+      frame = 0;
+      scoreDiv.textContent = 'Score: 0';
+      restartBtn.style.display = 'none';
+      requestAnimationFrame(loop);
+    }
+
+    function drawCar() {
+      ctx.save();
+      ctx.translate(car.x + car.w/2, car.y + car.h/2);
+      ctx.rotate(car.angle);
+      ctx.fillStyle = "#f7c325";
+      ctx.fillRect(-car.w/2, -car.h/2, car.w, car.h);
+      ctx.restore();
+    }
+
+    function drawPath() {
+      ctx.fillStyle = "#444";
+      let y = car.y + car.h + 20;
+      for (let i = 0; i < path.length; i++) {
+        ctx.fillRect(path[i].x, y, path[i].w, 80);
+        y -= 80;
+      }
+    }
+
+    function updatePath() {
+      // Add new path segments
+      if (path.length < 10) {
+        let prev = path[path.length - 1];
+        let dir = Math.random() < 0.5 ? -1 : 1;
+        let newX = prev.x + dir * 80;
+        newX = Math.max(40, Math.min(260, newX));
+        path.push({ x: newX, w: 100 });
+      }
+    }
+
+    function moveCar() {
+      if (car.turning) {
+        car.x += 2.5;
+      } else {
+        car.x -= 2.5;
+      }
+      car.y -= speed;
+    }
+
+    function checkCollision() {
+      let idx = Math.floor((car.y + car.h) / 80);
+      let segment = path[idx];
+      if (!segment) return true;
+      // Check if car is within the platform
+      if (car.x + car.w < segment.x || car.x > segment.x + segment.w) {
+        return true;
+      }
+      return false;
+    }
+
+    function loop() {
+      if (gameOver) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawPath();
+      drawCar();
+
+      moveCar();
+      updatePath();
+
+      if (checkCollision()) {
+        gameOver = true;
+        scoreDiv.textContent = `Game Over! Final Score: ${score}`;
+        restartBtn.style.display = 'block';
+        return;
+      }
+
+      // Remove old path segments
+      if (car.y + car.h < 0) {
+        car.y += 80;
+        path.shift();
+        score += 1;
+        scoreDiv.textContent = `Score: ${score}`;
+      }
+
+      frame++;
+      if (frame % 600 === 0) {
+        speed += 0.5; // Increase speed over time
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    canvas.addEventListener('mousedown', () => car.turning = true);
+    canvas.addEventListener('mouseup', () => car.turning = false);
+    canvas.addEventListener('touchstart', () => car.turning = true);
+    canvas.addEventListener('touchend', () => car.turning = false);
+
+    restartBtn.addEventListener('click', resetGame);
+
+    resetGame();
+  </script>
+</body>
+</html>
